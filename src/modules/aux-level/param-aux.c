@@ -139,14 +139,6 @@ void write_par_ll_dem(FILE *fp, bool verbose){
   fprintf(fp, "FILE_DEM = NULL\n");
   
   if (verbose){
-    fprintf(fp, "# This is the resampling option for reprojection the DEM; you can choose\n");
-    fprintf(fp, "# between Nearest Neighbor (NN), Bilinear (BL) and Cubic Convolution\n");
-    fprintf(fp, "# (CC).\n");
-    fprintf(fp, "# Type: Character. Valid values: {NN,BL,CC}\n");
-  }  
-  fprintf(fp, "DEM_RESAMPLING = BL\n");
-  
-  if (verbose){
     fprintf(fp, "# This parameter specifies whether a DEM database should be used.\n");
     fprintf(fp, "# If TRUE, a predefined DEM database is used for processing, i.e., \n");
     fprintf(fp, "# a precompiled database containing an individual DEM for each WRS-2 and\n");
@@ -155,25 +147,15 @@ void write_par_ll_dem(FILE *fp, bool verbose){
     fprintf(fp, "# Type: Logical. Valid values: {TRUE,FALSE}\n");
   }
   fprintf(fp, "# USE_DEM_DATABASE = FALSE\n");
-
+  
   if (verbose){
     fprintf(fp, "# This is the resampling option for reprojection the DEM; you can choose\n");
     fprintf(fp, "# between Nearest Neighbor (NN), Bilinear (BL) and Cubic Convolution\n");
     fprintf(fp, "# (CC).\n");
     fprintf(fp, "# Type: Character. Valid values: {NN,BL,CC}\n");
-  }
+  }  
   fprintf(fp, "DEM_RESAMPLING = BL\n");
-
-  if (verbose) {
-    fprintf(fp, "# This parameter specifies whether a DEM database should be used.\n");
-    fprintf(fp, "# If TRUE, a predefined DEM database is used for processing, i.e., \n");
-    fprintf(fp, "# a precompiled database containing an individual DEM for each WRS-2 and\n");
-    fprintf(fp, "# MGRS frame. If TRUE, give the directory of the database through FILE_DEM.\n");
-    fprintf(fp, "# If FALSE, provide a single DEM file through FILE_DEM or disable DEM usage.\n");
-    fprintf(fp, "# Type: Logical. Valid values: {TRUE,FALSE}\n");
-  }
-  fprintf(fp, "USE_DEM_DATABASE = FALSE\n");
-
+  
   if (verbose){
     fprintf(fp, "# Nodata value of the DEM.\n");
     fprintf(fp, "# Type: Integer. Valid range: [-32768,32767]\n");
@@ -265,7 +247,7 @@ void write_par_ll_cube(FILE *fp, bool verbose){
     fprintf(fp, "# given as WKT string - or can be a predefined coordinate/grid system.\n");
     fprintf(fp, "# If one of the predefined systems are used, TILE_SIZE,  ORIGIN_LAT, \n");
     fprintf(fp, "# ORIGIN_LON are ignored and internally replaced with predefined values.\n");
-    fprintf(fp, "# predefined values. Currently, EQUI7 and GLANCE7 are availble. Both\n");
+    fprintf(fp, "# Currently, EQUI7 and GLANCE7 are availble. Both\n");
     fprintf(fp, "# are globally defined sets of projections with a corresponding grid \n");
     fprintf(fp, "# system. EQUI7 consists of 7 Equi-Distant, continental projections,\n");
     fprintf(fp, "# with a tile size of 100km. GLANCE7 consists of 7 Equal-Area, conti-\n");
@@ -836,7 +818,7 @@ void write_par_hl_extent(FILE *fp, bool verbose){
     fprintf(fp, "# Most efficient is to use a chunk size that coincides with the tile size. Using\n");
     fprintf(fp, "# smaller chunks may be necessary if you cannot fit all necessary data into RAM.\n");
     fprintf(fp, "# The tilesize must be dividable by the chunk size without remainder.\n");
-    fprintf(fp, "# Note that setting the chunk size to 0 as was done with the deprecated CHUNK_SIZE\n");
+    fprintf(fp, "# Note that setting the chunk size to 0 as was done with the deprecated BLOCK_SIZE\n");
     fprintf(fp, "# parameter is not permitted anymore.\n");
     fprintf(fp, "# Type: Integer list. Valid range: ]0,TILE_SIZE]\n");
   }
@@ -1473,7 +1455,7 @@ void write_par_hl_index(FILE *fp, bool verbose){
   if (verbose){
     fprintf(fp, "# Any index defined in indices.json can be used, as well as SMA,\n");
     fprintf(fp, "# or any band name present in the SENSORS band combination\n");
-    fprintf(fp, "# Type: Character list.\n")
+    fprintf(fp, "# Type: Character list.\n");
   }
   fprintf(fp, "INDEX = NDVI EVI NBR RED NIR\n");
 
