@@ -137,16 +137,8 @@ void write_par_ll_dem(FILE *fp, bool verbose){
     fprintf(fp, "# Type: full file path\n");
   }
   fprintf(fp, "FILE_DEM = NULL\n");
-
+  
   if (verbose){
-    fprintf(fp, "# This is the resampling option for reprojection the DEM; you can choose\n");
-    fprintf(fp, "# between Nearest Neighbor (NN), Bilinear (BL) and Cubic Convolution\n");
-    fprintf(fp, "# (CC).\n");
-    fprintf(fp, "# Type: Character. Valid values: {NN,BL,CC}\n");
-  }
-  fprintf(fp, "DEM_RESAMPLING = BL\n");
-
-  if (verbose) {
     fprintf(fp, "# This parameter specifies whether a DEM database should be used.\n");
     fprintf(fp, "# If TRUE, a predefined DEM database is used for processing, i.e., \n");
     fprintf(fp, "# a precompiled database containing an individual DEM for each WRS-2 and\n");
@@ -154,8 +146,16 @@ void write_par_ll_dem(FILE *fp, bool verbose){
     fprintf(fp, "# If FALSE, provide a single DEM file through FILE_DEM or disable DEM usage.\n");
     fprintf(fp, "# Type: Logical. Valid values: {TRUE,FALSE}\n");
   }
-  fprintf(fp, "USE_DEM_DATABASE = FALSE\n");
-
+  fprintf(fp, "# USE_DEM_DATABASE = FALSE\n");
+  
+  if (verbose){
+    fprintf(fp, "# This is the resampling option for reprojection the DEM; you can choose\n");
+    fprintf(fp, "# between Nearest Neighbor (NN), Bilinear (BL) and Cubic Convolution\n");
+    fprintf(fp, "# (CC).\n");
+    fprintf(fp, "# Type: Character. Valid values: {NN,BL,CC}\n");
+  }  
+  fprintf(fp, "DEM_RESAMPLING = BL\n");
+  
   if (verbose){
     fprintf(fp, "# Nodata value of the DEM.\n");
     fprintf(fp, "# Type: Integer. Valid range: [-32768,32767]\n");
@@ -651,6 +651,7 @@ void write_par_ll_output(FILE *fp, bool verbose){
     fprintf(fp, "# Metadata are written to the ENVI header or directly into the Tiff\n");
     fprintf(fp, "# to the FORCE domain. If the size of the metadata exceeds the Tiff's limit,\n");
     fprintf(fp, "# an external .aux.xml file is additionally generated.\n");
+    fprintf(fp, "# Note that COG output is only possible when the chunk size matches the tile size.\n");
     fprintf(fp, "# Type: Character. Valid values: {ENVI,GTiff,COG,CUSTOM}\n");
   }
   fprintf(fp, "OUTPUT_FORMAT = COG\n");
@@ -814,8 +815,8 @@ void write_par_hl_extent(FILE *fp, bool verbose){
 
   if (verbose){
     fprintf(fp, "# This parameter is used to define the size of the sub-tile processing units.\n");
-    fprintf(fp, "# Most efficient is to use a chunk size that coincides with the tile size. Using \n");
-    fprintf(fp, "# smaller chunks may be necessary if you cannot fit all necessary data into RAM. \n");
+    fprintf(fp, "# Most efficient is to use a chunk size that coincides with the tile size. Using\n");
+    fprintf(fp, "# smaller chunks may be necessary if you cannot fit all necessary data into RAM.\n");
     fprintf(fp, "# The tilesize must be dividable by the chunk size without remainder.\n");
     fprintf(fp, "# Note that setting the chunk size to 0 as was done with the deprecated BLOCK_SIZE\n");
     fprintf(fp, "# parameter is not permitted anymore.\n");
@@ -895,17 +896,17 @@ void write_par_hl_sensor(FILE *fp, bool verbose){
     fprintf(fp, "# Sensors to be used in the analysis. Multi-sensor analyses are restricted\n");
     fprintf(fp, "# to the overlapping bands. Each sensor needs a sensor definition in the runtime-data\n");
     fprintf(fp, "# directory. New sensors can be added by the user. New bandnames can be added, too.\n");
-    fprintf(fp, "# Type: Character list. \n");
-  }  
+    fprintf(fp, "# Type: Character list.\n");
+  }
   fprintf(fp, "SENSORS = LND08 LND09 SEN2A SEN2B SEN2C\n");
 
   if (verbose){
     fprintf(fp, "# Target sensor that represents the combination of input sensors.\n");
-    fprintf(fp, "# A sensor definition for this target sensor needs to exist to make sure that processing \n");
-    fprintf(fp, "# those outputs will be possible. For example, if you combine Landsat 8 and Sentinel-2, \n");
-    fprintf(fp, "# the target sensor containing the overlapping bands could be LNDLG. If only using Sentinel-2 \n");
+    fprintf(fp, "# A sensor definition for this target sensor needs to exist to make sure that processing\n");
+    fprintf(fp, "# those outputs will be possible. For example, if you combine Landsat 8 and Sentinel-2,\n");
+    fprintf(fp, "# the target sensor containing the overlapping bands could be LNDLG. If only using Sentinel-2\n");
     fprintf(fp, "# sensors, the target sensor could be SEN2L. Valid values are the same as for SENSORS.\n");
-    fprintf(fp, "# Type: Character list. \n");
+    fprintf(fp, "# Type: Character list.\n");
   }
   fprintf(fp, "TARGET_SENSOR = LNDLG\n");
 
@@ -1030,8 +1031,8 @@ void write_par_hl_time(FILE *fp, bool verbose){
   fprintf(fp, "DOY_RANGE = 1 365\n");
 
   if (verbose){
-    fprintf(fp, "# Landat 7 was de-orbited in 2019. Landsat 7 data might be available \n");
-    fprintf(fp, "# in your data cube even though you might not want to use it anymore. \n");
+    fprintf(fp, "# Landsat 7 was de-orbited in 2019. Landsat 7 data might be available\n");
+    fprintf(fp, "# in your data cube even though you might not want to use it anymore.\n");
     fprintf(fp, "# This parameters sets the date after which Landsat 7 data should be ignored.\n");
     fprintf(fp, "# Type: Date. Format: YYYY-MM-DD\n");
   }
@@ -1452,15 +1453,9 @@ void write_par_hl_index(FILE *fp, bool verbose){
   fprintf(fp, "# ------------------------------------------------------------------------\n");
 
   if (verbose){
-    fprintf(fp, "# Perform the time series analysis using the specified band or index.\n");
-    fprintf(fp, "# Multiple indices can be processed at once to avoid multiple reads of the\n");
-    fprintf(fp, "# same file. Only necessary bands will be input. You will be alerted if the\n");
-    fprintf(fp, "# index cannot be computed based on the requested SENSORS. The index SMA is\n");
-    fprintf(fp, "# a linear spectral mixture analysis and is dependent on the parameters\n");
-    fprintf(fp, "# specified in the SPECTRAL MIXTURE ANALYSIS section below.\n");
     fprintf(fp, "# Any index defined in indices.json can be used, as well as SMA,\n");
     fprintf(fp, "# or any band name present in the SENSORS band combination\n");
-    fprintf(fp, "# Type: Character list. \n");
+    fprintf(fp, "# Type: Character list.\n");
   }
   fprintf(fp, "INDEX = NDVI EVI NBR RED NIR\n");
 
@@ -2148,6 +2143,8 @@ void write_par_hl_l2i(FILE *fp, bool verbose){
     fprintf(fp, "# the SENSORS parameter. For improving the spatial resolution of Landsat to\n");
     fprintf(fp, "# Sentinel-2, it is recommended to use \"SENSORS = sen2a sen2b\", and\n");
     fprintf(fp, "# \"SENSORS_LOWRES = LND07 LND08 LND09\"\n");
+    // fprintf(fp, "# Type: Character list. Valid values: {LND04,LND05,LND07,LND08,LND09,SEN2A,\n");
+    // fprintf(fp, "#   SEN2B,SEN2C,SEN2D,sen2a,sen2b,sen2c,sen2d,S1AIA,S1BIA,S1AID,S1BID}\n");
   }
   fprintf(fp, "SENSORS_LOWRES = LND07 LND08 LND09\n");
 

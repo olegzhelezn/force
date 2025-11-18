@@ -1,0 +1,17 @@
+.. _v31001:
+
+FORCE v. 3.10.01
+===============
+
+Release: 14.11.2025
+
+**Read through the changelog of :ref:`v3900` closely. In this version, there are some important changes that may affect your workflows!**
+
+- **FORCE L2PS**
+
+    - Katja Kowalski reported a random crash in ``force-l2ps``, 
+      which was seemingly caused by a read beyond array allocation. 
+      This has been fixed now. Thanks Katja for reporting this issue.
+
+
+  

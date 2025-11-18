@@ -1,0 +1,19 @@
+.. _v31002:
+
+FORCE v. 3.10.02
+===============
+
+Release: 18.11.2025
+
+**Read through the changelog of :ref:`v3900` closely. In this version, there are some important changes that may affect your workflows!**
+
+- **FORCE HLPS**
+
+    - UDF and TSA-UDF submodules: If Python code is provided in UDF or TSA-UDF submodules, 
+      the STREAMING option is now automatically set to FALSE. 
+      A warning message is printed to inform the user about this change.
+      This was already the case for R code in these submodules, but apparently some
+      change in the belly of Python now necessitates to also disable streaming when 
+      Python code along with a newer Python version is used (like done in the Docker containers >= v 3.9.0).
+      Thanks to David Klehr for noticing this issue.
+  
