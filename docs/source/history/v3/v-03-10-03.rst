@@ -1,0 +1,15 @@
+.. _v31003:
+
+FORCE v. 3.10.03
+===============
+
+Release: 18.11.2025
+
+**Read through the changelog of :ref:`v3900` closely. In this version, there are some important changes that may affect your workflows!**
+
+- **FORCE HLPS/AUX**
+
+    - Reading the new datacube-definition.prj format failed when spaces were present in the values.
+      This can especially happen for PROJECTION definitions.
+      The reading function has been updated to properly handle spaces in values.
+      Thanks to reva1804 and pleitebier for reporting this issue.
