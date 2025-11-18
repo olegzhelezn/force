@@ -29,15 +29,22 @@ This file contains functions for reading all-purpose files
 
 
 /** This function reads a tag and value file
++++ The file must contain tag and value pairs separated by '='.
++++ Each pair must be in a separate line.
++++ If spaces are allowed in values, the function parameter
++++ `space_allowed` must be set to true. But even if spaces are
++++ allowed, leading and trailing spaces will be trimmed from the value.
 --- fname:  text file
+--- space_allowed: if true, spaces are allowed in values (string should not be split at spaces)
 --- nrows: number of rows (returned)
 +++ Return: tag and values
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
-char ***read_tagvalue(char *fname, int *nrows){
+char ***read_tagvalue(char *fname, bool space_allowed, int *nrows){
 FILE *fp;
 char  buffer[NPOW_16] = "\0";
 char *ptr = NULL;
-const char *separator = " =";
+const char *separator_with_space = " =";
+const char *separator_without_space = "=";
 char ***tagval = NULL;
 int n = 0;
 int n_buf = 1;
@@ -60,6 +67,7 @@ int n_buf = 1;
     buffer[strcspn(buffer, "\r\n")] = 0;
 
     char *saveptr = NULL;
+    const char *separator = separator_with_space;
     if ((ptr = strtok_r(buffer, separator, &saveptr)) == NULL){
       printf("could not read tag/value pair from:\n  %s\n", fname);
       free_3D((void***)tagval, n_buf, _TV_LENGTH_);
@@ -69,12 +77,15 @@ int n_buf = 1;
       copy_string(tagval[n][_TV_TAG_], NPOW_10, ptr);
     }
 
+
+    separator = space_allowed ? separator_without_space : separator_with_space;
     if ((ptr = strtok_r(NULL, separator, &saveptr)) == NULL){
       printf("could not read tag/value pair from:\n  %s\n", fname);
       free_3D((void***)tagval, n_buf, _TV_LENGTH_);
       fclose(fp);
       return NULL;
     } else {
+      if (space_allowed) trim_leading_trailing_spaces(ptr, true, true);
       copy_string(tagval[n][_TV_VAL_], NPOW_10, ptr);
     }
 
@@ -99,4 +110,22 @@ int n_buf = 1;
 
   *nrows = n;
   return tagval;
+}
+
+
+/** This function prints tag and value pairs
+--- tagval: tag and value pairs
+--- nrows:  number of rows
++++ Return: void
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
+void print_tagvalue(char ***tagval, int nrows){
+
+
+  printf("Tag-Value pairs :::\n");
+
+  for (int i=0; i<nrows; i++){
+    printf("Tag: `%s` Value: `%s`\n", tagval[i][_TV_TAG_], tagval[i][_TV_VAL_]);
+  }
+
+  return;
 }
