@@ -177,6 +177,42 @@ size_t suffix_len;
 }
 
 
+/** Trim leading and trailing spaces from a string
++++ This function trims leading and trailing spaces from a string.
+--- str:              string to trim (modified)
+--- trim_leading:    if true, leading spaces are trimmed
+--- trim_trailing:   if true, trailing spaces are trimmed
++++ Return: new length of the trimmed string
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
+int trim_leading_trailing_spaces(char *str, bool trim_leading, bool trim_trailing){
+
+  char *start = str;
+  char *end = str + strlen(str) - 1;
+  char *dest = str;
+
+  // Trim leading spaces
+  if (trim_leading){
+    while (*start == ' ' && start <= end){
+      start++;
+    }
+  }
+
+  // Trim trailing spaces
+  if (trim_trailing) {
+    while (*end == ' ' && end >= start){
+      end--;
+    }
+  }
+
+  // Shift the trimmed string to the beginning
+  while (start <= end) {
+    *dest++ = *start++;
+  }
+  *dest = '\0'; // Null-terminate the trimmed string
+
+  return dest - str; // Return new length of the trimmed string
+}
+
 
 /** Overwrites part of a string with substring
 +++ This function overwrites part of a string with a given replacement string.

@@ -41,7 +41,8 @@ Reading all-purpose files
 extern "C" {
 #endif
 
-char ***read_tagvalue(char *fname, int *nrows);
+char ***read_tagvalue(char *fname, bool space_allowed, int *nrows);
+void print_tagvalue(char ***tagval, int nrows);
 
 #ifdef __cplusplus
 }

@@ -341,7 +341,11 @@ int nrows = 0;
   concat_string_2(cube->def_path, NPOW_10, cube->dir_path, "datacube-definition.prj", "/");
 
   // read datacube definition
-  input = read_tagvalue(cube->def_path, &nrows);
+  input = read_tagvalue(cube->def_path, true, &nrows);
+  
+  print_tagvalue(input, nrows);
+  #ifdef FORCE_DEBUG
+  #endif
 
   // if reading with new function failed, try deprecated function
   if (input == NULL){
