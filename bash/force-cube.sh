@@ -104,15 +104,15 @@ function cubethis(){
   x=$1
   y=$2
 
-  debug "$x $y $ORIGX $ORIGY $TILESIZE $CHUNKSIZE $RES $FINP $DOUT $COUT"
+  debug "$x $y $ORIGX $ORIGY $TILESIZEX $TILESIZEY $RES $FINP $DOUT $COUT"
 
-  ULX=$(echo "$ORIGX" "$x" "$TILESIZE" | awk '{printf "%f",  $1 + $2*$3}')
-  ULY=$(echo "$ORIGY" "$y" "$TILESIZE" | awk '{printf "%f",  $1 - $2*$3}')
-  LRX=$(echo "$ORIGX" "$x" "$TILESIZE" | awk '{printf "%f",  $1 + ($2+1)*$3}')
-  LRY=$(echo "$ORIGY" "$y" "$TILESIZE" | awk '{printf "%f",  $1 - ($2+1)*$3}')
+  ULX=$(echo "$ORIGX" "$x" "$TILESIZEX" | awk '{printf "%f",  $1 + $2*$3}')
+  ULY=$(echo "$ORIGY" "$y" "$TILESIZEY" | awk '{printf "%f",  $1 - $2*$3}')
+  LRX=$(echo "$ORIGX" "$x" "$TILESIZEX" | awk '{printf "%f",  $1 + ($2+1)*$3}')
+  LRY=$(echo "$ORIGY" "$y" "$TILESIZEY" | awk '{printf "%f",  $1 - ($2+1)*$3}')
   TILE=$(printf "X%04d_Y%04d" "$x" "$y")
-  XBLOCK=$(echo "$TILESIZE"  "$RES" | awk '{print int($1/$2)}')
-  YBLOCK=$(echo "$CHUNKSIZE" "$RES" | awk '{print int($1/$2)}')
+  XBLOCK=256
+  YBLOCK=256
   debug "$ULX $ULY $LRX $LRY $TILE $XBLOCK $YBLOCK"
 
   mkdir -p "$DOUT/$TILE"
@@ -128,7 +128,7 @@ function cubethis(){
     fi
 
     $RASTERIZE_EXE "${BURNOPT[@]}" -a_nodata "$ONODATA" -ot "$DATATYPE" -of GTiff \
-      -co COMPRESS=LZW -co PREDICTOR=2 -co NUM_THREADS=ALL_CPUS \
+      -co COMPRESS=ZSTD -co PREDICTOR=2 -co NUM_THREADS=ALL_CPUS \
       -co BIGTIFF=YES -co BLOCKXSIZE="$XBLOCK" -co BLOCKYSIZE="$YBLOCK" \
       -init "$ONODATA" -tr "$RES" "$RES" -te "$ULX" "$LRY" "$LRX" "$ULY" "$FINP" "$FOUT"
     if [ "$?" -ne 0 ]; then
@@ -155,7 +155,7 @@ function cubethis(){
     fi
 
     $RASTER_WARP_EXE -q -srcnodata "$INODATA" -dstnodata "$ONODATA" -ot "$DATATYPE" -of GTiff \
-      -co INTERLEAVE=BAND -co COMPRESS=LZW -co PREDICTOR=2 -co NUM_THREADS=ALL_CPUS \
+      -co INTERLEAVE=BAND -co COMPRESS=ZSTD -co PREDICTOR=2 -co NUM_THREADS=ALL_CPUS \
       -co BIGTIFF=YES -co BLOCKXSIZE="$XBLOCK" -co BLOCKYSIZE="$YBLOCK" \
       -t_srs "$WKT" -te "$ULX" "$LRY" "$LRX" "$ULY" -tr "$RES" "$RES" -r "$RESAMPLE" "$FINP" "$FOUT"
     if [ "$?" -ne 0 ]; then
@@ -177,7 +177,7 @@ function cubethis(){
       mv "$DOUT/$TILE/$COUT.tif" "$DOUT/$TILE/$COUT'_TEMP1.tif'"
       $RASTER_MERGE_EXE -q -o "$DOUT/$TILE/$COUT.tif" -ot "$DATATYPE" -of GTiff \
         -n "$ONODATA" -a_nodata "$ONODATA" -init "$ONODATA" \
-        -co INTERLEAVE=BAND -co COMPRESS=LZW -co PREDICTOR=2 -co NUM_THREADS=ALL_CPUS \
+        -co INTERLEAVE=BAND -co COMPRESS=ZSTD -co PREDICTOR=2 -co NUM_THREADS=ALL_CPUS \
         -co BIGTIFF=YES -co BLOCKXSIZE="$XBLOCK" -co BLOCKYSIZE="$YBLOCK" \
         "$DOUT/$TILE/$COUT'_TEMP1.tif'" "$DOUT/$TILE/$COUT'_TEMP2.tif'"
       if [ "$?" -ne 0 ]; then
@@ -322,12 +322,18 @@ for i in "$@"; do
   debug "tempfile: $FTMP"
 
   # datacube parameters
-  WKT=$(head -n 1 "$DCDEF")
-  ORIGX=$(head -n 4 "$DCDEF"  | tail -1 )
-  ORIGY=$(head -n 5 "$DCDEF" | tail -1 )
-  TILESIZE=$(head -n 6 "$DCDEF" | tail -1 )
-  CHUNKSIZE=$(head -n 7 "$DCDEF" | tail -1 )
-  debug "$WKT $ORIGX $ORIGY $TILESIZE $CHUNKSIZE"
+  WKT=$(read_tag_value "PROJECTION" "$DCDEF")
+  if [[ "$?" -ne 0 ]]; then WKT=$(head -n 1 "$DCDEF"); fi # deprecated fallback
+  ORIGX=$(read_tag_value "ORIGIN_MAP_X" "$DCDEF")
+  if [[ "$?" -ne 0 ]]; then ORIGX=$(head -n 4 "$DCDEF"  | tail -1 ); fi # deprecated fallback
+  ORIGY=$(read_tag_value "ORIGIN_MAP_Y" "$DCDEF")
+  if [[ "$?" -ne 0 ]]; then ORIGY=$(head -n 5 "$DCDEF" | tail -1 ); fi # deprecated fallback
+  TILESIZEX=$(read_tag_value "TILE_SIZE_X" "$DCDEF")
+  if [[ "$?" -ne 0 ]]; then TILESIZEX=$(head -n 6 "$DCDEF" | tail -1 ); fi # deprecated fallback
+  TILESIZEY=$(read_tag_value "TILE_SIZE_Y" "$DCDEF")
+  if [[ "$?" -ne 0 ]]; then TILESIZEY=$(head -n 6 "$DCDEF" | tail -1 ); fi # deprecated fallback
+  
+  debug "$WKT $ORIGX $ORIGY $TILESIZEX $TILESIZEY"
 
   # nodata value
   if [ "$RASTER" == "true" ]; then
@@ -382,26 +388,26 @@ for i in "$@"; do
   debug "$XMIN $YMAX $XMAX $YMIN"
 
   # 1st tile, and ulx/uly of 1st tile
-  TXMIN=$(echo "$XMIN" "$ORIGX" "$TILESIZE" | awk '{f=($1-$2)/$3;i=int(f);print(i==f||f>0)?i:i-1}')
-  TYMIN=$(echo "$YMAX" "$ORIGY" "$TILESIZE" | awk '{f=($2-$1)/$3;i=int(f);print(i==f||f>0)?i:i-1}')
-  ULX=$(echo "$ORIGX" "$TXMIN" "$TILESIZE" | awk '{printf "%f", $1 + $2*$3}')
-  ULY=$(echo "$ORIGY" "$TYMIN" "$TILESIZE" | awk '{printf "%f", $1 - $2*$3}')
+  TXMIN=$(echo "$XMIN" "$ORIGX" "$TILESIZEX" | awk '{f=($1-$2)/$3;i=int(f);print(i==f||f>0)?i:i-1}')
+  TYMIN=$(echo "$YMAX" "$ORIGY" "$TILESIZEY" | awk '{f=($2-$1)/$3;i=int(f);print(i==f||f>0)?i:i-1}')
+  ULX=$(echo "$ORIGX" "$TXMIN" "$TILESIZEX" | awk '{printf "%f", $1 + $2*$3}')
+  ULY=$(echo "$ORIGY" "$TYMIN" "$TILESIZEY" | awk '{printf "%f", $1 - $2*$3}')
   debug "UL grid $ULX $ULY"
 
   # step a tile to the west, and check if image is in tile, find last tile
   TXMAX="$TXMIN"
-  ULX=$(echo "$ULX" "$TILESIZE" | awk '{printf "%f",  $1+$2}')
+  ULX=$(echo "$ULX" "$TILESIZEX" | awk '{printf "%f",  $1+$2}')
   while is_lt "$ULX" "$XMAX"; do
     TXMAX=$(echo "$TXMAX" | awk '{print $1+1}')
-    ULX=$(echo "$ULX" "$TILESIZE" | awk '{printf "%f",  $1+$2}')
+    ULX=$(echo "$ULX" "$TILESIZEX" | awk '{printf "%f",  $1+$2}')
   done
 
   # step a tile to the south, and check if image is in tile, find last tile
   TYMAX=$TYMIN
-  ULY=$(echo "$ULY" "$TILESIZE" | awk '{printf "%f", $1-$2}')
+  ULY=$(echo "$ULY" "$TILESIZEY" | awk '{printf "%f", $1-$2}')
   while is_lt "$YMIN" "$ULY"; do
     TYMAX=$(echo "$TYMAX" | awk '{print $1+1}')
-    ULY=$(echo "$ULY" "$TILESIZE" | awk '{printf "%f",  $1-$2}')
+    ULY=$(echo "$ULY" "$TILESIZEY" | awk '{printf "%f",  $1-$2}')
   done
   debug "X_TILE_RANGE = $TXMIN $TXMAX"
   debug "Y_TILE_RANGE = $TYMIN $TYMAX"
@@ -411,7 +417,7 @@ for i in "$@"; do
   MEMORY=$(LANG="C"; free --mega | awk '/^Mem/ { printf("%.0fM\n", $2 * 0.05) }')
 
   # cube the file, spawn multiple jobs for each tile
-  export WKT ORIGX ORIGY TILESIZE CHUNKSIZE RES 
+  export WKT ORIGX ORIGY TILESIZEX TILESIZEY RES 
   export FINP DOUT COUT INODATA ONODATA RESAMPLE RASTER DATATYPE ATTRIBUTE
   $PARALLEL_EXE -j "$NJOB" --memsuspend "$MEMORY" cubethis {1} {2} ::: $(seq "$TXMIN" "$TXMAX") ::: $(seq "$TYMIN" "$TYMAX")
 
