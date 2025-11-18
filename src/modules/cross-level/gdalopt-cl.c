@@ -128,7 +128,7 @@ bool b_ext = false;
     exit(1);
   }
 
-  tagval = read_tagvalue(fname, &nrows);
+  tagval = read_tagvalue(fname, false, &nrows);
   if (tagval == NULL){
     printf("Reading GDAL options failed.\n");
     exit(FAILURE);
