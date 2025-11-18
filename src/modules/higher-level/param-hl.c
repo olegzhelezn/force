@@ -1291,6 +1291,11 @@ double tol = 5e-3;
       printf("Warning: R code provided. STREAMING is forced to FALSE. Proceed.\n");
     }
 
+    if (phl->tsa.pyp.out && phl->stream){
+      phl->stream = false;
+      printf("Warning: Python code provided. STREAMING is forced to FALSE. Proceed.\n");
+    }
+
   }
 
   if (phl->type == _HL_UDF_){
@@ -1314,6 +1319,11 @@ double tol = 5e-3;
     if (phl->udf.rsp.out && phl->stream){
       phl->stream = false;
       printf("Warning: R code provided. STREAMING is forced to FALSE. Proceed.\n");
+    }
+
+    if (phl->udf.pyp.out && phl->stream){
+      phl->stream = false;
+      printf("Warning: Python code provided. STREAMING is forced to FALSE. Proceed.\n");
     }
 
   }
