@@ -94,7 +94,7 @@ function mask(){
     --NoDataValue=255 \
     --type=Byte \
     --format='GTiff' \
-    --creation-option='COMPRESS=LZW' \
+    --creation-option='COMPRESS=ZSTD' \
     --creation-option='PREDICTOR=2' \
     --creation-option='NUM_THREADS=ALL_CPUS' \
     --creation-option='BIGTIFF=YES' \
@@ -159,19 +159,21 @@ if [ ! -w $DOUT ]; then
   echoerr "$DOUT is not existing/writeable"; help
 fi
 
-if [ ! -r $DINP/datacube-definition.prj ]; then
-  echoerr "$DINP/datacube-definition.prj is not existing/readable"; help
+DC_DEFINITION_INPUT="$DINP/datacube-definition.prj"
+if [ ! -r "$DC_DEFINITION_INPUT" ]; then
+  echoerr "$DC_DEFINITION_INPUT is not existing/readable"; help
 fi
 
-if [ -r $DOUT/datacube-definition.prj ]; then
-  DIFF=$(diff "$DINP/datacube-definition.prj" "$DOUT/datacube-definition.prj")
+DC_DEFINITION_OUTPUT="$DOUT/datacube-definition.prj"
+if [ -r "$DC_DEFINITION_OUTPUT" ]; then
+  DIFF=$(diff "$DC_DEFINITION_INPUT" "$DC_DEFINITION_OUTPUT")
   NUM=$(echo $DIFF | wc -w)
   if [ $NUM -gt 0 ]; then
     echoerr "input and output datacubes do not match"; help
   fi
 else
   echo "copying datacube-definition.prj"
-  cp "$DINP/datacube-definition.prj" "$DOUT/datacube-definition.prj"
+  cp "$DC_DEFINITION_INPUT" "$DC_DEFINITION_OUTPUT"
 fi
 
 if [ $OBASE == "DEFAULT" ]; then
@@ -201,12 +203,14 @@ if [ $(cat "$TEMP" | wc -l) -lt 1 ]; then
 fi
 
 # tile /chunk size
-TILESIZE=$(head -n 6 $DOUT/datacube-definition.prj | tail -1 )
-CHUNKSIZE=$(head -n 7 $DOUT/datacube-definition.prj | tail -1 )
+TILESIZEX=$(read_tag_value "TILE_SIZE_X" "$DC_DEFINITION_OUTPUT")
+if [[ "$?" -ne 0 ]]; then TILESIZEX=$(head -n 6 "$DC_DEFINITION_OUTPUT" | tail -1 ); fi # deprecated fallback
+TILESIZEY=$(read_tag_value "TILE_SIZE_Y" "$DC_DEFINITION_OUTPUT")
+if [[ "$?" -ne 0 ]]; then TILESIZEY=$(head -n 6 "$DC_DEFINITION_OUTPUT" | tail -1 ); fi # deprecated fallback
 
 # block size
-XBLOCK=$(echo $TILESIZE  $RES | awk '{print int($1/$2)}')
-YBLOCK=$(echo $CHUNKSIZE $RES | awk '{print int($1/$2)}')
+XBLOCK=256
+YBLOCK=256
 
 export DOUT=$DOUT
 export FOUT=$FOUT

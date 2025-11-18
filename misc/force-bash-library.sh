@@ -160,3 +160,10 @@ is_integer(){
   if [[ "$1" =~ ^-?[0-9]+$ ]]; then return 0; else return 1; fi
 }
 export -f is_integer
+
+# read a value from tag-value pair file ($2) for given tag ($1)
+read_tag_value(){
+  VALUE=$(grep "^$1 " "$2" | sed 's/.* *= *//')
+  if [ -z "$VALUE" ]; then return 1; else echo "$VALUE"; return 0; fi
+}
+export -f read_tag_value
