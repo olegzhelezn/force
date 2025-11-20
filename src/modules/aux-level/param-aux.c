@@ -1401,7 +1401,7 @@ void write_par_hl_pac(FILE *fp, bool verbose){
     fprintf(fp, "# the corresponding years, need to be the same for all files.\n");
     fprintf(fp, "# Type: List with basenames of 3 files\n");
   }
-  fprintf(fp, "BASE_LSP = NULL\n");
+  fprintf(fp, "BASE_LSP = NULL NULL NULL\n");
 
   if (verbose){
     fprintf(fp, "# This parameter defines year, which corresponds to the 1st band of the\n");
