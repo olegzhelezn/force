@@ -47,7 +47,9 @@ extern "C" {
 
 typedef struct {
   short **cso_[_BYTE_LEN_];
-  date_t *d_cso;
+  date_t *window_start;
+  date_t *window_end;
+  bool *window_used;
 } cso_t;
 
 brick_t **clear_sky_observations(ard_t *ard, brick_t *mask, int nt, par_hl_t *phl, cube_t *cube, int *nproduct);
