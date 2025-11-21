@@ -210,7 +210,7 @@ brick_t **CSO;
 small *mask_ = NULL;
 int o, w, k, n, q, p, nprod = 0;
 int t, t_left;
-int d_ce, ce, ce_left;
+int d_ce, ce, doy, ce_left;
 int *t0 = NULL, *t1 = NULL;
 int month, year;
 int nc;
@@ -273,8 +273,9 @@ bool alloc_q_array = false;
     for (t=t_left; t<nt; t++){
 
       ce = get_brick_ce(ard[t].QAI, 0);
+      doy = get_brick_doy(ard[t].QAI, 0);
 
-      if (ce >= cs.d_cso[w].ce && ce < cs.d_cso[w+1].ce){
+      if (ce >= cs.d_cso[w].ce && ce < cs.d_cso[w+1].ce && phl->date_doys[doy]){
         if (t0[w] < 0) t0[w] = t;
         t1[w] = t;
       } else if (ce >= cs.d_cso[w+1].ce){
