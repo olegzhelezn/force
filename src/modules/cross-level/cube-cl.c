@@ -343,8 +343,8 @@ int nrows = 0;
   // read datacube definition
   input = read_tagvalue(cube->def_path, true, &nrows);
   
-  print_tagvalue(input, nrows);
   #ifdef FORCE_DEBUG
+  print_tagvalue(input, nrows);
   #endif
 
   // if reading with new function failed, try deprecated function
