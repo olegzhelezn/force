@@ -544,30 +544,46 @@ float vz;
 
     if (bap->score_type == _SCR_TYPE_GAUSS_){
 
-      // use left tail of Gaussian if acquisition before target
+      // use left tail of Gaussian if acquisition before target 
       if (ce < target[y].ce[1]){
 
-        // DOY score
-        score[t].d = bap->Ds[1] * exp(ce_dist*ce_dist/
-                                (-2*target[y].a*target[y].a));
+        // use 0 weight if acquisition before target and off-season data is excluded
+        if (!bap->offsea && ce < target[y].ce[0]){
 
-        // Year score
-        slice = (target[y].ce[1]-target[y].ce[0])/((bap->Yr+1)*bap->Yf);
-        score[t].y = bap->Ds[1] * exp(dy*slice*dy*slice/
-                                (-2*target[y].a*target[y].a));
+          score[t].d = score[t].y = 0;
+
+        } else {
+          
+          // DOY score
+          score[t].d = bap->Ds[1] * exp(ce_dist*ce_dist/
+                                  (-2*target[y].a*target[y].a));
+
+          // Year score
+          slice = (target[y].ce[1]-target[y].ce[0])/((bap->Yr+1)*bap->Yf);
+          score[t].y = bap->Ds[1] * exp(dy*slice*dy*slice/
+                                  (-2*target[y].a*target[y].a));
+        }
 
       // use right tail of Gaussian if acquisition before target
       } else {
 
-        // DOY score
-        score[t].d = bap->Ds[1] * exp(ce_dist*ce_dist/
-                                (-2*target[y].b*target[y].b));
+        // use 0 weight if acquisition after target and off-season data is excluded
+        if (!bap->offsea && ce > target[y].ce[2]){
 
-        // Year score
-        slice = (target[y].ce[2]-target[y].ce[1])/((bap->Yr+1)*bap->Yf);
-        score[t].y = bap->Ds[1] * exp(dy*slice*dy*slice/
-                                (-2*target[y].b*target[y].b));
+          score[t].d = score[t].y = 0;
 
+        } else {
+        
+          // DOY score
+          score[t].d = bap->Ds[1] * exp(ce_dist*ce_dist/
+                                  (-2*target[y].b*target[y].b));
+
+          // Year score
+          slice = (target[y].ce[2]-target[y].ce[1])/((bap->Yr+1)*bap->Yf);
+          score[t].y = bap->Ds[1] * exp(dy*slice*dy*slice/
+                                  (-2*target[y].b*target[y].b));
+        }
+        
       }
 
       // difference between acquisition and target
