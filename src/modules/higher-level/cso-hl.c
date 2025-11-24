@@ -47,11 +47,9 @@ brick_t *compile_cso_brick(brick_t *ard, int nb, bool write, char *prodname, par
 brick_t **compile_cso(ard_t *ard, cso_t *cs, par_hl_t *phl, cube_t *cube, int nt, int nw, int *nproduct){
 brick_t **CSO = NULL;
 short nodata = SHRT_MIN;
-int w, q;
-int year, month;
-date_t date;
-char fdate[NPOW_10];
-int o, nprod = phl->cso.sta.nmetrics;
+
+
+int nprod = phl->cso.sta.nmetrics;
 int error = 0;
 
 char prodname[_BYTE_LEN_][NPOW_10];
@@ -68,47 +66,105 @@ short ***ptr[_BYTE_LEN_];
   if (phl->cso.sta.std > -1) copy_string(prodname[phl->cso.sta.std], NPOW_10, "STD");
   if (phl->cso.sta.skw > -1) copy_string(prodname[phl->cso.sta.skw], NPOW_10, "SKW");
   if (phl->cso.sta.krt > -1) copy_string(prodname[phl->cso.sta.krt], NPOW_10, "KRT");
-  for (q=0; q<phl->cso.sta.nquantiles; q++){
+  for (int q=0; q<phl->cso.sta.nquantiles; q++){
     nchar = snprintf(prodname[phl->cso.sta.qxx[q]], NPOW_10, "Q%02.0f", phl->cso.sta.q[q]*100);
     if (nchar < 0 || nchar >= NPOW_10){
       printf("Buffer Overflow in assembling prodname\n"); return NULL;}
   }
 
 
-  for (o=0; o<nprod; o++) ptr[o] = &cs->cso_[o];
+  for (int o=0; o<nprod; o++) ptr[o] = &cs->cso_[o];
 
 
   alloc((void**)&CSO, nprod, sizeof(brick_t*));
 
-  // alloc dates, use one additional date to have right boundary
-  if (nw > 0) alloc((void**)&cs->d_cso, nw+1, sizeof(date_t)); else cs->d_cso = NULL;
+  // alloc window dates
+  if (nw > 0){
+    alloc((void**)&cs->window_start, nw, sizeof(date_t)); 
+    alloc((void**)&cs->window_end, nw, sizeof(date_t)); 
+    alloc((void**)&cs->window_used, nw, sizeof(bool)); 
+  } else {
+    cs->window_start = NULL;
+    cs->window_end = NULL;
+    cs->window_used = NULL;
+  }
 
 
 
-  for (o=0; o<nprod; o++){
+  for (int o=0; o<nprod; o++){
 
     if ((CSO[o] = compile_cso_brick(ard[0].QAI, nw, true, prodname[o], phl)) == NULL || (  *ptr[o] = get_bands_short(CSO[o])) == NULL){
       printf("Error compiling %s product. ", prodname[o]); error++;
     } else {
-      init_date(&date);
-      year = phl->date_range[_MIN_].year;
-      month = phl->date_range[_MIN_].month;
 
-      for (w=0; w<=nw; w++){
-        if (month > 12){ year++; month -= 12;}
-        set_date(&date, year, month, 1);
-        copy_date(&date, &cs->d_cso[w]);
-        compact_date(date.year, date.month, date.day, fdate, NPOW_10);
-//printf("W: "); print_date(&date);
-        if (w < nw){
-          set_brick_nodata(CSO[o], w, nodata);
-          set_brick_wavelength(CSO[o], w, w+1);
-          set_brick_date(CSO[o], w, date);
-          set_brick_domain(CSO[o], w, fdate);
-          set_brick_bandname(CSO[o], w, fdate);
-        }
-        month += phl->cso.step;
+      date_t date[2];
+      init_date(&date[_MIN_]);
+      init_date(&date[_MAX_]);
+
+      int year[2] = {phl->date_range[_MIN_].year, phl->date_range[_MIN_].year};
+      int month[2] = {phl->date_range[_MIN_].month, phl->date_range[_MIN_].month + phl->cso.step};
+
+
+      // nominal windows
+      for (int w=0; w<nw; w++){
+
+        if (month[_MIN_] > 12){ year[_MIN_]++; month[_MIN_] -= 12;}
+        if (month[_MAX_] > 12){ year[_MAX_]++; month[_MAX_] -= 12;}
+
+        set_date(&date[_MIN_], year[_MIN_], month[_MIN_], 1);
+        set_date(&date[_MAX_], year[_MAX_], month[_MAX_], 1);
+
+        copy_date(&date[_MIN_], &cs->window_start[w]);
+        copy_date(&date[_MAX_], &cs->window_end[w]);
+        //printf("W: "); print_date(&date[_MIN_]); pint_date(&date[_MAX_]);
+
+        char fdate[NPOW_10];
+        compact_date(date[_MIN_].year, date[_MIN_].month, date[_MIN_].day, fdate, NPOW_10);
+
+        set_brick_nodata(CSO[o], w, nodata);
+        set_brick_wavelength(CSO[o], w, w+1);
+        set_brick_date(CSO[o], w, date[_MIN_]);
+        set_brick_domain(CSO[o], w, fdate);
+        set_brick_bandname(CSO[o], w, fdate);
+
+        month[_MIN_] += phl->cso.step;
+        month[_MAX_] += phl->cso.step;
+
       }
+
+      // adjusted windows according to DOY_RANGE
+      for (int w=0; w<nw; w++){
+
+        while (cs->window_start[w].ce < cs->window_end[w].ce &&
+          (!phl->date_doys[cs->window_start[w].doy] || !phl->date_doys[cs->window_end[w].doy])){
+
+          if (!phl->date_doys[cs->window_start[w].doy]) set_date_ce(&cs->window_start[w], cs->window_start[w].ce+1);
+          if (!phl->date_doys[cs->window_end[w].doy]) set_date_ce(&cs->window_end[w], cs->window_end[w].ce-1);
+
+        }
+
+        if (cs->window_start[w].ce >= cs->window_end[w].ce){
+          cs->window_used[w] = false;
+        } else {
+          cs->window_used[w] = true;
+        }
+
+      }
+
+      #ifdef FORCE_DEBUG
+      for (int w=0; w<nw; w++){
+
+        if (!cs->window_used[w]){
+          printf("CSO window %d not used\n", w);
+        } else {
+          printf("CSO window %d goes from\n", w);
+          print_date(&cs->window_start[w]);
+          printf("to\n");
+          print_date(&cs->window_end[w]);
+        }
+          
+      }
+      #endif
 
     }
   }
@@ -116,9 +172,11 @@ short ***ptr[_BYTE_LEN_];
 
   if (error > 0){
     printf("%d compiling CSO product errors.\n", error);
-    for (o=0; o<nprod; o++) free_brick(CSO[o]);
+    for (int o=0; o<nprod; o++) free_brick(CSO[o]);
     free((void*)CSO);
-    if (cs->d_cso != NULL){ free((void*)cs->d_cso); cs->d_cso = NULL;}
+    if (cs->window_start != NULL){ free((void*)cs->window_start); cs->window_start = NULL;}
+    if (cs->window_end != NULL){ free((void*)cs->window_end); cs->window_end = NULL;}
+    if (cs->window_used != NULL){ free((void*)cs->window_used); cs->window_used = NULL;}
     return NULL;
   }
 
@@ -208,28 +266,15 @@ brick_t **clear_sky_observations(ard_t *ard, brick_t *mask, int nt, par_hl_t *ph
 cso_t cs;
 brick_t **CSO;
 small *mask_ = NULL;
-int o, w, k, n, q, p, nprod = 0;
-int t, t_left;
-int d_ce, ce, ce_left;
-int *t0 = NULL, *t1 = NULL;
-int month, year;
-int nc;
-int nw;
 short nodata = SHRT_MIN;
-short minimum, maximum;
-short q25_, q75_;
-double mean, var;
-double skew, kurt;
-double skewscaled, kurtscaled;
-double *q_array = NULL; // need to be double for GSL quantile function
-bool alloc_q_array = false;
+int nprod = 0;
 
 
   cite_me(_CITE_CSO_);
 
 
   // import bricks
-  nc = get_brick_chunkncells(ard[0].QAI);
+  int nc = get_brick_chunkncells(ard[0].QAI);
 
   // import mask (if available)
   if (mask != NULL){
@@ -239,9 +284,9 @@ bool alloc_q_array = false;
 
 
   // number of steps
-  nw = 0;
-  year  = phl->date_range[_MIN_].year;
-  month = phl->date_range[_MIN_].month;
+  int nw = 0;
+  int year  = phl->date_range[_MIN_].year;
+  int month = phl->date_range[_MIN_].month;
   
   while (year < phl->date_range[_MAX_].year ||
         (year <= phl->date_range[_MAX_].year && month < phl->date_range[_MAX_].month)){
@@ -262,22 +307,28 @@ bool alloc_q_array = false;
 
   
   // first and last t per window
-
+  int *t0 = NULL, *t1 = NULL;
   alloc((void**)&t0, nw, sizeof(int));
   alloc((void**)&t1, nw, sizeof(int));
 
-  for (w=0, t_left=0; w<nw; w++){
+  for (int w=0, t_left=0; w<nw; w++){
 
     t0[w] = t1[w] = -1;
 
-    for (t=t_left; t<nt; t++){
+    // off-season window
+    if (!cs.window_used[w]) continue;
 
-      ce = get_brick_ce(ard[t].QAI, 0);
+    for (int t=t_left; t<nt; t++){
 
-      if (ce >= cs.d_cso[w].ce && ce < cs.d_cso[w+1].ce){
+      int ce = get_brick_ce(ard[t].QAI, 0);
+      int doy = get_brick_doy(ard[t].QAI, 0);
+
+      if (!phl->date_doys[doy]) continue;
+
+      if (ce >= cs.window_start[w].ce && ce < cs.window_end[w].ce){
         if (t0[w] < 0) t0[w] = t;
         t1[w] = t;
-      } else if (ce >= cs.d_cso[w+1].ce){
+      } else if (ce >= cs.window_end[w].ce){
         break;
       }
 
@@ -285,55 +336,61 @@ bool alloc_q_array = false;
 
     if (t1[w] >= 0) t_left = t1[w];
     
-    //printf("t0: %d, t1: %d\n", t0[w], t1[w]);
+    #ifdef FORCE_DEBUG
+    printf("w: %d, t0: %d, t1: %d\n", w, t0[w], t1[w]);
+    #endif
     
   }
 
 
-
-
-  
-  if (phl->cso.sta.quantiles || phl->cso.sta.iqr > -1) alloc_q_array = true;
-  
-
-  #pragma omp parallel private(o,t,w,minimum,maximum,q,q_array,mean,var,skew,kurt,n,k,skewscaled,kurtscaled,q25_,q75_,d_ce,ce,ce_left) shared(mask_,cs,nc,nw,nt,nodata,alloc_q_array,phl,t0,t1,nprod,ard) default(none)
+  #pragma omp parallel shared(mask_,cs,nc,nw,nt,nodata,phl,t0,t1,nprod,ard) default(none)
   {
-
+    
+    double *q_array = NULL; // need to be double for GSL quantile function
+    bool alloc_q_array = false;
+    if (phl->cso.sta.quantiles || phl->cso.sta.iqr > -1) alloc_q_array = true;
+    
     if (alloc_q_array) alloc((void**)&q_array, nt+1, sizeof(double));
 
     #pragma omp for
-    for (p=0; p<nc; p++){
+    for (int p=0; p<nc; p++){
 
       if (mask_ != NULL && !mask_[p]){
-        for (o=0; o<nprod; o++){
-          for (w=0; w<nw; w++) cs.cso_[o][w][p] = nodata;
+        for (int o=0; o<nprod; o++){
+          for (int w=0; w<nw; w++) cs.cso_[o][w][p] = nodata;
         }
         continue;
       }
 
 
-      for (w=0; w<nw; w++){
+      for (int w=0; w<nw; w++){
 
-        mean = var = skew = kurt = n = k = 0;
-        skewscaled = kurtscaled = 0;
-        minimum = SHRT_MAX; maximum = SHRT_MIN;
-        q25_ = q75_ = SHRT_MIN;
+        if (!cs.window_used[w]){
+          for (int o=0; o<nprod; o++) cs.cso_[o][w][p] = nodata;
+          continue;
+        }
+
+        int n = 0, k = 0;
+        double mean = 0.0, var = 0.0, skew = 0.0, kurt = 0.0;
+        double skewscaled = 0.0, kurtscaled = 0.0;
+        short minimum = SHRT_MAX, maximum = SHRT_MIN;
+        short q25_ = SHRT_MIN, q75_ = SHRT_MIN;
 
         if (t0[w] > -1){
 
-          ce_left = cs.d_cso[w].ce;
+          int ce_left = cs.window_start[w].ce;
 
-          for (t=t0[w]; t<=t1[w]; t++){
+          for (int t=t0[w]; t<=t1[w]; t++){
 
             // check nodata
             if (!ard[t].msk[p]) continue;
             
-            ce = get_brick_ce(ard[t].QAI, 0);
+            int ce = get_brick_ce(ard[t].QAI, 0);
 
             // if current date is larger than previous date (incl. left window boundary),
             // include dt in stats
             if (ce > ce_left){
-              d_ce = ce - ce_left;
+              int d_ce = ce - ce_left;
               if (alloc_q_array) q_array[k] = (float)d_ce;
               kurt_recurrence(d_ce, &mean, &var, &skew, &kurt, ++k);
               if (d_ce < minimum) minimum = d_ce;
@@ -347,7 +404,8 @@ bool alloc_q_array = false;
 
           // if current date is smaller than right window boundary,
           // include dt of right boundary in stats
-          if ((d_ce = cs.d_cso[w+1].ce - ce_left) > 0){
+          int d_ce;
+          if ((d_ce = cs.window_end[w].ce - ce_left) > 0){
             if (alloc_q_array) q_array[k] = (float)d_ce;
             kurt_recurrence(d_ce, &mean, &var, &skew, &kurt, ++k);
             if (d_ce < minimum) minimum = d_ce;
@@ -356,7 +414,7 @@ bool alloc_q_array = false;
 
         } else {
 
-          minimum = maximum = mean = cs.d_cso[w+1].ce-cs.d_cso[w].ce;
+          minimum = maximum = mean = cs.window_end[w].ce - cs.window_start[w].ce;
 
         }
 
@@ -379,7 +437,7 @@ bool alloc_q_array = false;
         if (phl->cso.sta.krt > -1) cs.cso_[phl->cso.sta.krt][w][p] = (short)kurtscaled;
 
         if (phl->cso.sta.quantiles){
-          for (q=0; q<phl->cso.sta.nquantiles; q++){
+          for (int q=0; q<phl->cso.sta.nquantiles; q++){
             cs.cso_[phl->cso.sta.qxx[q]][w][p] = (short)quantile(q_array, n, phl->cso.sta.q[q]);
             if (phl->cso.sta.q[q] == 0.25) q25_ = cs.cso_[phl->cso.sta.qxx[q]][w][p];
             if (phl->cso.sta.q[q] == 0.75) q75_ = cs.cso_[phl->cso.sta.qxx[q]][w][p];
@@ -405,7 +463,9 @@ bool alloc_q_array = false;
 
 
   // clean temporal information
-  if (cs.d_cso != NULL){ free((void*)cs.d_cso); cs.d_cso = NULL;}
+  if (cs.window_start != NULL){ free((void*)cs.window_start); cs.window_start = NULL;}
+  if (cs.window_end != NULL){ free((void*)cs.window_end); cs.window_end = NULL;}
+  if (cs.window_used != NULL){ free((void*)cs.window_used); cs.window_used = NULL;}
   free((void*)t0);
   free((void*)t1);
 

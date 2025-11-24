@@ -1623,7 +1623,7 @@ double get_brick_ulx(brick_t *brick){
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
 double get_brick_x(brick_t *brick, int j){
 
-  return (brick->geotran[_GT_ULX_] + j*brick->geotran[_GT_RES_]);
+  return (brick->geotran[_GT_ULX_] + j*brick->geotran[_GT_XRES_]);
 }
 
 
@@ -1657,7 +1657,7 @@ double get_brick_uly(brick_t *brick){
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
 double get_brick_y(brick_t *brick, int i){
 
-  return (brick->geotran[_GT_ULY_] + i*brick->geotran[_GT_RES_]);
+  return (brick->geotran[_GT_ULY_] + i*brick->geotran[_GT_YRES_]);
 }
 
 
