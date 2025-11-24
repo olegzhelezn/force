@@ -261,12 +261,21 @@ DOY_STATIC = 120 180 240
 # This parameter specifies whether all available data within the requested time
 # frame are used – or only from the season of interest. If FALSE, the composites 
 # only consider data for the period, in which the intra-annual score is higher 
-# than 0.01. If there is no clear-sky data within this period, data gaps are 
-# possible. If TRUE, all data from the requested years are used, thus the risk
-# of having data gaps is lower. However, it is possible that data from unwanted
-# parts of the year are selected.
+# than OFF_SEASON_CUTOFF parameter (see below). If there is no clear-sky data  
+# within this period, data gaps are possible. If TRUE, all data from the requested 
+# years are used, thus the risk of having data gaps is lower. However, it is 
+# possible that data from unwanted parts of the year are selected.
 # Type: Logical. Valid values: {TRUE,FALSE}
 OFF_SEASON = FALSE
+# This parameter specifies the minimum DOY score, with which images are considered for 
+# compositing. For the Gaussian function, two values must be submitted (for the start of  
+# the season and the end of the season), used for cutting off tails of the score distribution). 
+# For the sigmoid function, only one value is necessary. To exclude all DOYs before and 
+# after the target start and end dates respectively, set this parameter values to 
+# correspond to the first and last values in DOY_SCORE (for Gaussian function), or the 
+# lowest value in DOY_SCORE (Sigmoid function).
+# Type: Float list, 1 or 2 values. Valid values: [0,1]
+OFF_SEASON_CUTOFF = 0.01 0.01
 # This parameter specifies whether observations with a cloud score of less than 1%
 # should be candidates. On one hand, this reduces nodata gaps in the composite. On the other hand,
 # it will include clouds if there is no better observation.
