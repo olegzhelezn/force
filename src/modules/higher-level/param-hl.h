@@ -99,6 +99,8 @@ typedef struct {
   int *Dt;            // target DOYs
   int nDt, nDs;
   float *Ds;           // function values for target DOYs
+  float *Dc;      // DOY score cutoff
+  int nDc;
   int offsea; // use off-season data?
   int use_cloudy; // use ultra-cloudy data?
   int use_hazy; // use ultra-hazy data?
