@@ -700,6 +700,7 @@ float vz;
 --- nb:     number of bands
 --- nodata: nodata value
 --- p:      pixel
+--- target: target information
 --- score:  score parameters
 --- tdist:  temporal distance to target
 --- hmean:  mean of HOT
@@ -709,7 +710,7 @@ float vz;
 +++ Return: SUCCESS/FAILURE
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
 int bap_compositing(ard_t *ard, level3_t *l3, int nt, int nb, short nodata, int p, par_scr_t *score, target_t *target, int *tdist, float hmean, float hsd, bool water, par_bap_t *bap){
-int ce;
+int ce, ce_dist, y, y_;
 int t, max_t = -1, n = 0, b;
 double max_score = -1;
 
@@ -719,9 +720,17 @@ double max_score = -1;
 
     if (!ard[t].msk[p]) continue;
 
+    // get date in continuous time
+    ce = get_brick_ce(ard[t].DAT, 0);
+    // get closest year
+    ce_dist = INT_MAX; y = 0;
+    for (y_=0; y_<bap->Yn; y_++){
+      if ((diff = abs(ce-target[y_].ce[1])) < ce_dist){ ce_dist = diff; y = y_;}
+    }
+    // apply the cutoff separately for right-end Gaussian tail, and the rest
     if (bap->score_type == _SCR_TYPE_GAUSS_ && ce > target[y].ce[1]){
       if (!bap->offsea && score[t].d < bap->Dc[1] ) continue;
-    } else {
+    } else { 
       if (!bap->offsea && score[t].d < bap->Dc[0] ) continue;
     } 
 
