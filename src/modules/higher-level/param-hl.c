@@ -152,7 +152,7 @@ void register_bap(params_t *params, par_hl_t *phl){
   register_intvec_par(params,   "DOY_STATIC", 1, 365, 3, &phl->bap.Dt, &phl->bap.nDt);
 
   register_bool_par(params,  "OFF_SEASON", &phl->bap.offsea);
-  register_float_par(params, "OFF_SEASON_CUTOFF", 0, 1, 2, &phl->bap.Dc,  &phl->bap.nDc);
+  register_floatvec_par(params, "OFF_SEASON_CUTOFF", 0, 1, 2, &phl->bap.Dc,  &phl->bap.nDc);
   register_bool_par(params,  "USE_CLOUDY", &phl->bap.use_cloudy);
   register_bool_par(params,  "USE_HAZY", &phl->bap.use_hazy);
   register_float_par(params, "DREQ", 1, FLT_MAX, &phl->bap.dreq);
