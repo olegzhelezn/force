@@ -708,7 +708,8 @@ float vz;
 --- bap:    bap parameters
 +++ Return: SUCCESS/FAILURE
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
-int bap_compositing(ard_t *ard, level3_t *l3, int nt, int nb, short nodata, int p, par_scr_t *score, int *tdist, float hmean, float hsd, bool water, par_bap_t *bap){
+int bap_compositing(ard_t *ard, level3_t *l3, int nt, int nb, short nodata, int p, par_scr_t *score, target_t *target, int *tdist, float hmean, float hsd, bool water, par_bap_t *bap){
+int ce;
 int t, max_t = -1, n = 0, b;
 double max_score = -1;
 
