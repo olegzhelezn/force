@@ -720,9 +720,9 @@ double max_score = -1;
     if (!ard[t].msk[p]) continue;
 
     if (bap->score_type == _SCR_TYPE_GAUSS_ && ce > target[y].ce[1]){
-      if (!bap->offsea && score[t].d < bap->dscoff[1] ) continue;
+      if (!bap->offsea && score[t].d < bap->Dc[1] ) continue;
     } else {
-      if (!bap->offsea && score[t].d < bap->dscoff[0] ) continue;
+      if (!bap->offsea && score[t].d < bap->Dc[0] ) continue;
     } 
 
     if (!bap->use_hazy && bap->w.h  > 0 && score[t].h  < 0.01 && 
