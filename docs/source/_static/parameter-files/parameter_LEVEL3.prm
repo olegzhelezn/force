@@ -268,12 +268,12 @@ DOY_STATIC = 120 180 240
 # Type: Logical. Valid values: {TRUE,FALSE}
 OFF_SEASON = FALSE
 # This parameter specifies the minimum DOY score, with which images are considered for 
-# compositing. For the Gaussian function, two values must be submitted (for the start of  
-# the season and the end of the season), used for cutting off tails of the score distribution). 
-# For the sigmoid function, only one value is necessary. To exclude all DOYs before and 
-# after the target start and end dates respectively, set this parameter values to 
-# correspond to the first and last values in DOY_SCORE (for Gaussian function), or the 
-# lowest value in DOY_SCORE (Sigmoid function).
+# compositing. For the sigmoid function, only one value is necessary (second value is 
+# not used). For the Gaussian function, one or two values can be submitted (for the start 
+# of the season and the end of the season). If only one value is submitted, it is used for 
+# both the start and the end of the season. To exclude all DOYs before and after the target 
+start and end dates respectively, set this parameter values to the first and last values 
+in DOY_SCORE (for Gaussian function), or the lowest value in DOY_SCORE (Sigmoid function).
 # Type: Float list, 1 or 2 values. Valid values: [0,1]
 OFF_SEASON_CUTOFF = 0.01 0.01
 # This parameter specifies whether observations with a cloud score of less than 1%
