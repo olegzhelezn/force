@@ -729,7 +729,9 @@ double max_score = -1;
     }
     // apply the cutoff separately for right-end Gaussian tail, and the rest
     if (bap->score_type == _SCR_TYPE_GAUSS_ && ce > target[y].ce[1]){
-      if (!bap->offsea && score[t].d < bap->Dc[1] ) continue;
+      // If only one value is provided, it is used for both tails
+      float cutoff = (bap->nDc > 1) ? bap->Dc[1] : bap->Dc[0];
+      if (!bap->offsea && score[t].d < cutoff) continue;
     } else { 
       if (!bap->offsea && score[t].d < bap->Dc[0] ) continue;
     } 
@@ -815,7 +817,8 @@ double max_score = -1;
 --- bap:    bap parameters
 +++ Return: SUCCESS/FAILURE
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++**/
-int bap_weighting(ard_t *ard, level3_t *l3, int nt, int nb, short nodata, int p, par_scr_t *score, int *tdist, float hmean, float hsd, bool water, par_bap_t *bap){
+int bap_weighting(ard_t *ard, level3_t *l3, int nt, int nb, short nodata, int p, par_scr_t *score, target_t *target, int *tdist, float hmean, float hsd, bool water, par_bap_t *bap){
+int ce, ce_dist, diff, y, y_;
 int t, b, n = 0;
 double *sum_reflection = NULL;
 double sum_total = 0;
@@ -832,7 +835,22 @@ double sum_r = 0, sum_v = 0;
 
     if (!ard[t].msk[p]) continue;
 
-    if (!bap->offsea && score[t].d < 0.01) continue;
+    // get date in continuous time
+    ce = get_brick_ce(ard[t].DAT, 0);
+    // get closest year
+    ce_dist = INT_MAX; y = 0;
+    for (y_=0; y_<bap->Yn; y_++){
+      if ((diff = abs(ce-target[y_].ce[1])) < ce_dist){ ce_dist = diff; y = y_;}
+    }
+    // apply the cutoff separately for right-end Gaussian tail, and the rest
+    if (bap->score_type == _SCR_TYPE_GAUSS_ && ce > target[y].ce[1]){
+      // If only one value is provided, it is used for both tails
+      float cutoff = (bap->nDc > 1) ? bap->Dc[1] : bap->Dc[0];
+      if (!bap->offsea && score[t].d < cutoff) continue;
+    } else { 
+      if (!bap->offsea && score[t].d < bap->Dc[0] ) continue;
+    } 
+    
     if (!bap->use_hazy && bap->w.h  > 0 && score[t].h  < 0.01 && 
         hmean > 0.01 && hsd > 0.01) continue;
     if (!bap->use_cloudy && bap->w.c > 0 && score[t].c < 0.01) continue;
